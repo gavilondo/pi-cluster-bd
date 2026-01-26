@@ -1,54 +1,28 @@
----
-# ----------------------------------------------------------------------------------------
-# -- Docs: https://github.com/cluster-apps-on-docker/spark-standalone-cluster-on-docker --
-# ----------------------------------------------------------------------------------------
-volumes:
-  shared-workspace:
-    name: "hadoop-distributed-file-system"
-    driver: local
+version: "3"
+
 services:
-  jupyterlab:
-    pull_policy: never
-    image: andreper/jupyterlab:4.4.10-spark-3.5.7
-    container_name: jupyterlab
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
     ports:
-      - "8888:8888"
-      - "4040:4040"
-    volumes:
-      - shared-workspace:/opt/workspace
-  spark-master:
-    pull_policy: never
-    image: andreper/spark-master
-    container_name: spark-master
-    ports:
-      - "8080:8080"
-      - "7077:7077"
-    volumes:
-      - shared-workspace:/opt/workspace
-  spark-worker-1:
-    pull_policy: never
-    image: andreper/spark-worker
-    container_name: spark-worker-1
+      - "9870:9870"
+      - "9000:9000"
     environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=512m
-    ports:
-      - "8081:8081"
+      - CLUSTER_NAME=hdfs-cluster
     volumes:
-      - shared-workspace:/opt/workspace
-    depends_on:
-      - spark-master
-  spark-worker-2:
-    pull_policy: never
-    image: andreper/spark-worker
-    container_name: spark-worker-2
+      - namenode:/hadoop/dfs/name
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
     environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=512m
-    ports:
-      - "8082:8081"
-    volumes:
-      - shared-workspace:/opt/workspace
+      - CLUSTER_NAME=hdfs-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     depends_on:
-      - spark-master
-...
+      - namenode
+    volumes:
+      - datanode:/hadoop/dfs/data
+
+volumes:
+  namenode:
+  datanode:
