@@ -1,54 +1,77 @@
----
-# ----------------------------------------------------------------------------------------
-# -- Docs: https://github.com/cluster-apps-on-docker/spark-standalone-cluster-on-docker --
-# ----------------------------------------------------------------------------------------
+
+
+
+
+
 volumes:
   shared-workspace:
-    name: "hadoop-distributed-file-system"
-    driver: local
+    name: "cluster_tfg"
 services:
-  jupyterlab:
-    pull_policy: never
-    image: andreper/jupyterlab
-    container_name: jupyterlab
-    ports:
-      - "8888:8888"
-      - "4040:4040"
-    volumes:
-      - shared-workspace:/opt/workspace
   spark-master:
-    pull_policy: never
     image: andreper/spark-master
     container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_MODE=master
     ports:
-      - "8080:8080"
       - "7077:7077"
+      - "8080:8080"
     volumes:
       - shared-workspace:/opt/workspace
+    networks:
+      - bigdata_movies
+
   spark-worker-1:
-    pull_policy: never
     image: andreper/spark-worker
     container_name: spark-worker-1
+    depends_on:
+      - spark-master
     environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=512m
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=1024m
     ports:
       - "8081:8081"
     volumes:
       - shared-workspace:/opt/workspace
-    depends_on:
-      - spark-master
+    networks:
+      - bigdata_movies
+
+
   spark-worker-2:
-    pull_policy: never
     image: andreper/spark-worker
     container_name: spark-worker-2
+    depends_on:
+      - spark-master
     environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=512m
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=1024m
     ports:
       - "8082:8081"
     volumes:
       - shared-workspace:/opt/workspace
+    networks:
+      - bigdata_movies
+
+
+  jupyterlab:
+    image: andreper/jupyterlab
+    container_name: jupyterlab
     depends_on:
       - spark-master
-...
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    ports:
+      - "8888:8888"
+    volumes:
+      - shared-workspace:/opt/workspace
+    networks:
+      - bigdata_movies
+
+
+networks:
+  bigdata_movies:
+    external: true
