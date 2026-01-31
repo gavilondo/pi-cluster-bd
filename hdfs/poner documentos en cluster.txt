@@ -1,0 +1,3 @@
+docker cp actors.csv namenode:/tmp/actors.csv
+docker exec -it namenode hdfs dfs -mkdir -p /data
+docker exec -it namenode hdfs dfs -put /tmp/actors.csv /data/
